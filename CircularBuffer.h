@@ -48,9 +48,19 @@ public:
     }
   }
 
-  T last()
+  T recent()
   {
-    T* rp = wp_ + 1;
+    if (wp_ == buf_)
+    {
+      return *(tail_ - 1);
+    }
+
+    return *(wp_ - 1);
+  }
+
+  T old()
+  {
+    T* rp = wp_;
     if (rp == tail_)
     {
       rp = buf_;
