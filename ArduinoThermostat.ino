@@ -1,4 +1,3 @@
-#include <MsTimer2.h>
 #include <IRremote.h>
 #include "DHT.h"
 
@@ -123,7 +122,7 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
 
   // put your setup code here, to run once:
-  Serial.begin(9600);   // Status message will be sent to PC at 9600 baud
+  // Serial.begin(9600);   // Status message will be sent to PC at 9600 baud
   Serial.println("Start");
   dht.begin();
 
