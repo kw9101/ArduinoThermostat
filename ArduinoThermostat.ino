@@ -8,9 +8,9 @@ const int GREEN_PIN = 10;
 const int BLUE_PIN = 6;
 const int YELLOW_PIN = 8;
 const int LED_BRIGHT = 1;
-const float HIGH_TEMPERATURE = 25.5f;
-const float LOW_TEMPERATURE = 24.5f;
-const unsigned long TEMPERATURE_CHECK_DURATION = 10L * 1000L;
+const float HIGH_TEMPERATURE = 25.2f;
+const float LOW_TEMPERATURE = 24.7f;
+const unsigned long TEMPERATURE_CHECK_DURATION = 4L * 1000L;
 bool isOnHeater = false;
 
 DHT dht(DHT_PIN, DHT22);
@@ -99,10 +99,15 @@ void setup() {
   pinMode(YELLOW_PIN, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
 
+  analogLED(0, 0, 0);
   // put your setup code here, to run once:
   Serial.begin(9600);   // Status message will be sent to PC at 9600 baud
   Serial.println("< Start >");
+
+delay(500);
   dht.begin();
+delay(500);
+  
 }
 
 void loop() {
