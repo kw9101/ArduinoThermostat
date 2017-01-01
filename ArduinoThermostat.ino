@@ -1,16 +1,16 @@
 #include <IRremote.h>
 #include "DHT.h"
 
+const bool DEBUG_FLAG = true;
 const int DHT_PIN = 2;     // what digital pin we're connected to
 const int IR_PIN = 3;
 const int RED_PIN = 9;
 const int GREEN_PIN = 10;
 const int BLUE_PIN = 6;
-const int YELLOW_PIN = 8;
 const int LED_BRIGHT = 1;
-const float HIGH_TEMPERATURE = 25.2f;
+const float HIGH_TEMPERATURE = 25.0f;
 const float LOW_TEMPERATURE = 24.7f;
-const unsigned long TEMPERATURE_CHECK_DURATION = 4L * 1000L;
+const unsigned long TEMPERATURE_CHECK_DURATION = 3L * 1000L;
 bool isOnHeater = false;
 
 DHT dht(DHT_PIN, DHT22);
@@ -32,9 +32,12 @@ void TurnOnHeater(bool isTurnOn)
     return;
   }
 
-  Serial.print("Heater Turn ");
-  Serial.println(isTurnOn ? "On" : "Off");
-  Serial.println("");
+  if (DEBUG_FLAG == false)
+  {
+    Serial.print("Heater Turn ");
+    Serial.println(isTurnOn ? "On" : "Off");
+    Serial.println("");
+  }
 
   const int khz = 38; // 38kHz carrier frequency for the NEC protocol
 
@@ -44,10 +47,8 @@ void TurnOnHeater(bool isTurnOn)
 
   isOnHeater = !isOnHeater;
   digitalWrite(LED_BUILTIN, isOnHeater ? HIGH : LOW);   // turn the LED on (HIGH is the voltage level)
-  
-  digitalWrite(YELLOW_PIN, HIGH);
-  delay(1000);
-  digitalWrite(YELLOW_PIN, LOW);
+
+  analogLED(LED_BRIGHT, LED_BRIGHT, 0);
 }
 
 void CheckTemperature()
@@ -57,33 +58,37 @@ void CheckTemperature()
   float humidity = dht.readHumidity();
   float heatIndex = dht.computeHeatIndex(temperature, humidity, false);
 
-  Serial.print("CheckTemperature: ");
-  Serial.print(millis());
-  Serial.print(" \tHumidity: ");
-  Serial.print(humidity);
-  Serial.print(" %\t");
-  Serial.print("Temperature: ");
-  Serial.print(temperature);
-  Serial.print(" *C\t");
-  Serial.print("Heat index: ");
-  Serial.print(heatIndex);
-  Serial.println(" *C");
-  Serial.println("");
-  Serial.flush();
-    
+  if (DEBUG_FLAG == false)
+  {
+    Serial.print("CheckTemperature: ");
+
+    Serial.print(millis());
+    Serial.print(" \tHumidity: ");
+    Serial.print(humidity);
+    Serial.print(" %\t");
+    Serial.print("Temperature: ");
+    Serial.print(temperature);
+    Serial.print(" *C\t");
+    Serial.print("Heat index: ");
+    Serial.print(heatIndex);
+    Serial.println(" *C");
+    Serial.println("");
+    Serial.flush();
+  }
+
   if (isnan(temperature)) // 온습도기 에러 났을 때
   {
-    analogLED(LED_BRIGHT, LED_BRIGHT, 0);
+    analogLED(LED_BRIGHT, 0, LED_BRIGHT);
   }
   else if (temperature < LOW_TEMPERATURE) // 추울 때
   {
-    TurnOnHeater(true);
     analogLED(0, 0, LED_BRIGHT);
+    TurnOnHeater(true);
   }
   else if (HIGH_TEMPERATURE < temperature)   // 더울 때
   {
-    TurnOnHeater(false);
     analogLED(LED_BRIGHT, 0, 0);
+    TurnOnHeater(false);
   }
   else   // 적정
   {
@@ -96,18 +101,19 @@ void setup() {
   pinMode(RED_PIN, OUTPUT);
   pinMode(GREEN_PIN, OUTPUT);
   pinMode(BLUE_PIN, OUTPUT);
-  pinMode(YELLOW_PIN, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
 
   analogLED(0, 0, 0);
   // put your setup code here, to run once:
-  Serial.begin(9600);   // Status message will be sent to PC at 9600 baud
-  Serial.println("< Start >");
+  if (DEBUG_FLAG == false)
+  {
+    Serial.begin(9600);   // Status message will be sent to PC at 9600 baud
+    Serial.println("< Start >");
+  }
 
-delay(500);
+  delay(500);
   dht.begin();
-delay(500);
-  
+  delay(500);
 }
 
 void loop() {
