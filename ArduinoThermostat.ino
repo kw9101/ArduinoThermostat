@@ -32,14 +32,14 @@ void analogLED(int r, int g, int b)
   analogWrite(BLUE_PIN, 255 - constrain(b, 0, 255));
 }
 
-void TurnOnHeater(bool isTurnOn)
+void TurnOnHeater(bool isTurnOn, bool isForce = false)
 {
   // 켜져 있는 데 키라고 하거나, 꺼져 있는데 끄라고 하면 무시
   // 한일만 필요
-  //if (isOnHeater == isTurnOn)
-  //{
-//    return;
-//  }
+  if (isForce == false && isOnHeater == isTurnOn)
+  {
+    return;
+  }
 
   if (DEBUG_FLAG == true)
   {
@@ -54,11 +54,7 @@ void TurnOnHeater(bool isTurnOn)
   //  unsigned int irOnOffSignal[] = {4250, 4200, 600, 550, 600, 550, 600, 550, 550, 600, 550, 550, 550, 1600, 500, 1600, 500, 1600, 500, 500, 500, 600, 550, 500, 500, 1600, 500, 1550, 500, 550, 600, 550, 500, 550, 550, 1550, 450, 1600, 500, 1550, 500, 600, 500, 550, 450, 1650, 550, 1550, 550, 1600, 600};
   //  irsend.sendRaw(irOnOffSignal, sizeof(irOnOffSignal) / sizeof(irOnOffSignal[0]), khz); // Note the approach used to automatically calculate the size of the array.
 
-  if (isTurnOn == false)
-  {
-    irsend.sendLG(LG_POWER_OFF, 28); // 전원 Off
-  }
-  else
+  if (isTurnOn && (isForce || isOnHeater == false))
   {
     irsend.sendLG(LG_POWER_ON, 28); // 전원 ON
     delay(50);
@@ -68,14 +64,18 @@ void TurnOnHeater(bool isTurnOn)
     delay(50);
     irsend.sendLG(LG_DRY_OFF, 28); // 자동 건조 OFF
   }
+  else if (isTurnOn == false && (isForce || isOnHeater))
+  {
+    irsend.sendLG(LG_POWER_OFF, 28); // 전원 Off
+  }
 
-//  isOnHeater = !isOnHeater;
-//  digitalWrite(LED_BUILTIN, isOnHeater ? HIGH : LOW);   // turn the LED on (HIGH is the voltage level)
+  isOnHeater = isForce ? isOnHeater = isTurnOn : isOnHeater = !isOnHeater;
 
+  digitalWrite(LED_BUILTIN, isOnHeater ? HIGH : LOW);   // turn the LED on (HIGH is the voltage level)
   analogLED(LED_BRIGHT, LED_BRIGHT, 0);
 }
 
-void CheckTemperature()
+int CheckTemperature()
 {
   // dht22 에서 온습도를 얻어온다.
   float temperature = dht.readTemperature(false);
@@ -102,28 +102,22 @@ void CheckTemperature()
 
   if (isnan(temperature)) // 온습도기 에러 났을 때
   {
-    analogLED(LED_BRIGHT, 0, LED_BRIGHT);
-    TurnOnHeater(false);
-    return;
+    return -1;
   }
 
   // if (heatIndex < LOW_TEMPERATURE) // 추울 때
   if (temperature < LOW_TEMPERATURE)
   {
-    analogLED(0, 0, LED_BRIGHT);
-    TurnOnHeater(false);
-    return;
+    return 0;
   }
 
   // if (HIGH_TEMPERATURE < heatIndex)   // 더울 때
   if (HIGH_TEMPERATURE < temperature)   // 더울 때
   {
-    analogLED(LED_BRIGHT, 0, 0);
-    TurnOnHeater(true);
-    return;
+    return 2;
   }
 
-  analogLED(0, LED_BRIGHT, 0);
+  return 1;
 }
 
 void setup() {
@@ -144,9 +138,52 @@ void setup() {
   delay(500);
   dht.begin();
   delay(500);
+
+  int ts = CheckTemperature();
+  switch (ts)
+  {
+    case -1:
+      analogLED(LED_BRIGHT, 0, LED_BRIGHT);
+      TurnOnHeater(false, true);
+      break;
+    case 0: // 추울 때
+      analogLED(0, 0, LED_BRIGHT);
+      TurnOnHeater(false, true);
+      break;
+    case 1: // 알맞을 때
+      analogLED(0, LED_BRIGHT, 0);
+      TurnOnHeater(false, true);
+      break;
+    case 2: // 더울 때
+      analogLED(LED_BRIGHT, 0, 0);
+      TurnOnHeater(true, true);
+      break;
+  }
+
+  delay(TEMPERATURE_CHECK_DURATION);
 }
 
 void loop() {
-  CheckTemperature();
+  int ts = CheckTemperature();
+  switch (ts)
+  {
+    case -1:
+      analogLED(LED_BRIGHT, 0, LED_BRIGHT);
+      TurnOnHeater(false);
+      break;
+    case 0: // 추울 때
+      analogLED(0, 0, LED_BRIGHT);
+      TurnOnHeater(false);
+      break;
+    case 1: // 알맞을 때
+      analogLED(0, LED_BRIGHT, 0);
+      break;
+    case 2: // 더울 때
+      analogLED(LED_BRIGHT, 0, 0);
+      TurnOnHeater(true);
+      break;
+  }
+
   delay(TEMPERATURE_CHECK_DURATION);
 }
+
