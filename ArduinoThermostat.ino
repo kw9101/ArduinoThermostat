@@ -10,8 +10,8 @@ const int GREEN_PIN = 10;
 const int LED_BRIGHT = 1;
 // const float HIGH_TEMPERATURE = 24.2f;
 // const float LOW_TEMPERATURE = 23.9f;
-const float HIGH_TEMPERATURE = 28.0f;
-const float LOW_TEMPERATURE = 27.5f;
+const float HIGH_TEMPERATURE = 32.0f;
+const float LOW_TEMPERATURE = 28.2f;
 const unsigned long TEMPERATURE_CHECK_DURATION = 3L * 1000L;
 bool isOnHeater = false;
 
@@ -20,6 +20,7 @@ const unsigned long LG_POWER_OFF = 0x88C0051;
 const unsigned long LG_DEHUMIDIFY_WEAK = 0x8809902; // 제습 ON 약풍: 8809902 // 제습 ON 0x8809801
 const unsigned long LG_DRY_OFF = 0x88C00C8; // 자동 건조 OFF 0x88C00C8
 const unsigned long LG_LIGHT_OFF = 0x88C00A6; // 조명 OFF 0x88C00A6
+const unsigned long LG_SLEEP_RES = 0x88A0B49; // 취침 예약 3시간
 
 DHT dht(DHT_PIN, DHT22);
 
@@ -58,11 +59,11 @@ void TurnOnHeater(bool isTurnOn, bool isForce = false)
   {
     irsend.sendLG(LG_POWER_ON, 28); // 전원 ON
     delay(50);
-    irsend.sendLG(LG_LIGHT_OFF, 28); // 조명 OFF
-    delay(50);
-    irsend.sendLG(LG_DEHUMIDIFY_WEAK, 28); // 제습 ON 약풍: 8809902
-    delay(50);
     irsend.sendLG(LG_DRY_OFF, 28); // 자동 건조 OFF
+    delay(50);
+    irsend.sendLG(LG_SLEEP_RES, 28); // 취침 예약 3시간
+    delay(50);
+    irsend.sendLG(LG_LIGHT_OFF, 28); // 조명 OFF
   }
   else if (isTurnOn == false && (isForce || isOnHeater))
   {
@@ -105,14 +106,14 @@ int CheckTemperature()
     return -1;
   }
 
-  // if (heatIndex < LOW_TEMPERATURE) // 추울 때
-  if (temperature < LOW_TEMPERATURE)
+  if (heatIndex < LOW_TEMPERATURE) // 추울 때
+  //if (temperature < LOW_TEMPERATURE)
   {
     return 0;
   }
 
-  // if (HIGH_TEMPERATURE < heatIndex)   // 더울 때
-  if (HIGH_TEMPERATURE < temperature)   // 더울 때
+  if (HIGH_TEMPERATURE < heatIndex)   // 더울 때
+  //if (HIGH_TEMPERATURE < temperature)   // 더울 때
   {
     return 2;
   }
